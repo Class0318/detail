@@ -152,7 +152,7 @@ class ProductAddUpdate extends Component {
            <PicturesWall ref={this.pwRef} imgs={product.imgs}/>
         </Item> 
         <Item label="商品详情">
-           <div>商品详情组件</div>
+           <div>商品详情组件12</div>
         </Item>
          <Item>
            <Button type="primary" htmlType="submit">提交</Button>
