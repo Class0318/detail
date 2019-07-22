@@ -1,5 +1,7 @@
-import React, { Component } from 'react'
+import React, { Component, memo } from 'react'
 import { Card, Select, Input, Button, Icon,Table, message} from 'antd'
+
+import throttle from 'lodash.throttle'
 import { reqProducts, reqSearchProduct,reqUpdateStatus } from '../../api'
 import LinkButton from '../../components/link-button'
 import { PAGE_SIZE } from '../../utils/Constants'
@@ -18,24 +20,24 @@ export default class ProductHome extends Component {
       searchName:'',//搜索的关键字
     }
   
-    updateStatus = async(productId,status) => {
+    updateStatus = throttle(async(productId,status) => {
 
-        //计算更新后的值
-      status = status === 1 ? 2 : 1
-      console.log(status)
-      //请求更新
-      const result = await reqUpdateStatus(productId,status)
-      if(result.status===0){
-          message.success('更新商品状态成功')
+      //计算更新后的值
+    status = status === 1 ? 2 : 1
+    console.log(status)
+    //请求更新
+    const result = await reqUpdateStatus(productId,status)
+    if(result.status===0){
+        message.success('更新商品状态成功')
 
-          //获取当前页显示
-          
-          this.getProducts(this.pageNum)
-      }
+        //获取当前页显示
+        
+        this.getProducts(this.pageNum)
     }
+  },2000)
 
 
-
+ 
      
     initColumns =()=>{
       this.columns = [
@@ -80,13 +82,22 @@ export default class ProductHome extends Component {
                  onClick={ () => {
                      //在内存中保存product给详情detail组件用
                     memoryUtils.product = product
-                    this.props.history.push('/product/detail',product)
+                    this.props.history.push('/product/detail')
                  }}
                  
                  >
                    详情
               </LinkButton>
-              <LinkButton>修改</LinkButton>
+              <LinkButton
+                 onClick={ () => {
+                  //在内存中保存product给详情addupdate组件用
+                 memoryUtils.product = product
+                 this.props.history.push('/product/addupdate')
+              }}
+              
+              >修改
+              
+              </LinkButton>
             </span>
           ) 
         },
@@ -101,11 +112,12 @@ export default class ProductHome extends Component {
         const { searchName,searchType } = this.state
         let result 
        //发请求获取数据
-       if (!searchName){
-       result = await reqProducts(pageNum, PAGE_SIZE)
-       }else{
-        result = await reqSearchProduct({pageNum, pageSize:PAGE_SIZE,searchName,searchType})
-       }
+       if (!this.isSearch){
+       result = await reqProducts(pageNum, PAGE_SIZE) //点击搜索前都是一般分页请求
+       }else{  //点击搜索后都是搜索的分页
+        result = await reqSearchProduct({pageNum, pageSize:PAGE_SIZE,searchName,searchType}) //否则发搜索请求
+        this.isSearch = false 
+      }
         
         if(result.status===0){
          //取出数据
@@ -148,11 +160,17 @@ export default class ProductHome extends Component {
                value={searchName}
                onChange = {event => this.setState({searchName:event.target.value})}
             />
-            <Button type="primary" onClick={() => this.getProducts(1)}>搜索</Button>
+            <Button type="primary" onClick={() => {
+              this.isSearch = true  //保存搜索的标记
+              this.getProducts(1)
+            }}>搜索</Button>
           </span>
         )
       const extra = (
-        <Button type="primary">
+        <Button type="primary" onClick={ ()=> {
+          memoryUtils.product = {}
+          this.props.history.push('/product/addupdate')
+        }}>
           <Icon type="plus"/>
           添加商品 
         </Button>
